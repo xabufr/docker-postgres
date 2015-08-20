@@ -1,9 +1,12 @@
 #!/bin/bash
 set -e
 
+set_parameter_value() {
+	sedEscapedValue="$(echo "$2" | sed 's/[\/&]/\\&/g')"
+	sed -ri "s/^#?($1\s*=\s*)\S+/\1'$sedEscapedValue'/" "$PGDATA/postgresql.conf"
+}
 set_listen_addresses() {
-	sedEscapedValue="$(echo "$1" | sed 's/[\/&]/\\&/g')"
-	sed -ri "s/^#?(listen_addresses\s*=\s*)\S+/\1'$sedEscapedValue'/" "$PGDATA/postgresql.conf"
+	set_parameter_value 'listen_addresses' "$1"
 }
 
 if [ "$1" = 'postgres' ]; then
@@ -77,6 +80,7 @@ if [ "$1" = 'postgres' ]; then
 		fi
 
 		psql --username postgres <<-EOSQL
+			CREATE USER root WITH SUPERUSER;
 			$op USER "$POSTGRES_USER" WITH SUPERUSER $pass ;
 		EOSQL
 		echo
@@ -96,6 +100,7 @@ if [ "$1" = 'postgres' ]; then
 			exit 1
 		fi
 
+		set_parameter_value 'wal_level' 'archive'
 		set_listen_addresses '*'
 
 		echo

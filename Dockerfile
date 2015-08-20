@@ -38,9 +38,12 @@ ENV PATH /usr/lib/postgresql/$PG_MAJOR/bin:$PATH
 ENV PGDATA /var/lib/postgresql/data
 VOLUME /var/lib/postgresql/data
 
-COPY docker-entrypoint.sh /
+RUN apt-get update && apt-get install -y python-pip python-dev lzop pv python-pygresql \
+   && pip install wal-e \
+   && pip install --upgrade requests six \
+   && rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+COPY assets /etc/service/postgresql/
 
 EXPOSE 5432
-CMD ["postgres"]
+CMD ["/sbin/my_init"]
